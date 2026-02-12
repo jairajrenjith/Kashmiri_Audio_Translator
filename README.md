@@ -171,20 +171,15 @@ The system operates autonomously once files are uploaded.
 
 ---
 
-## Structured Output Example
+## Sample Output
 
-```
-report = {
-    "File": uploaded.name,
-    "Detected Language": lang,
-    "Threat Words": threat_words,
-    "People Mentioned": persons,
-    "Flagged Individuals": suspects,
-    "Locations": locations,
-    "Time References": times,
-    "Audio Segments": segments,
-    "Risk Level": risk
-}
+The system produces structured intelligence reports and batch risk summaries for analyst review.
+
+<p align="center">
+  <img src="sample_output_images/img1.png" width="48%" />
+  <img src="sample_output_images/img2.png" width="48%" />
+</p>
+
 
 ```
 

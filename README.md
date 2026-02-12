@@ -8,7 +8,7 @@ The system functions as an autonomous triage agent that processes, analyzes, and
 
 ## Core Capabilities
 
-### Speech Recognition (Offline)
+### 1. Speech Recognition (Offline)
 - Processes noisy field audio
 - Handles Hindi and Urdu robustly using multilingual modeling
 - Handles Kashmiri using multilingual approximation (low-resource language support)
@@ -18,15 +18,13 @@ The system functions as an autonomous triage agent that processes, analyzes, and
 
 Note: Kashmiri is a low-resource language. Performance depends on multilingual generalization rather than language-specific fine-tuning.
 
----
 
-### Automatic Translation
+### 2. Automatic Translation
 - Converts transcripts into clear English
 - Uses Whisper translation mode and an additional MarianMT multilingual-to-English model for normalization
 
----
 
-### Context-Aware Intelligence Extraction
+### 3. Context-Aware Intelligence Extraction
 
 The system performs rule-based NLP extraction of structured intelligence:
 
@@ -40,9 +38,8 @@ The system performs rule-based NLP extraction of structured intelligence:
 
 Threat detection is based on customizable keyword matching rather than semantic embedding or contextual sentiment modeling.
 
----
 
-### Risk Assessment Engine
+### 4. Risk Assessment Engine
 
 Risk classification is determined using rule-based scoring combining threat keyword presence and sensitive location matching.
 

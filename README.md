@@ -1,42 +1,58 @@
 # Kashmiri Multilingual Audio Intelligence Agent
 
-An **offline multilingual audio intelligence system** designed to analyze noisy real-world speech recordings containing **Kashmiri, Hindi, and Urdu** — often mixed within the same conversation — and convert them into **structured, actionable intelligence**.
+An offline multilingual audio intelligence system designed to analyze noisy real-world speech recordings containing Kashmiri, Hindi, and Urdu — often mixed within the same conversation — and convert them into structured, actionable intelligence.
 
-This system helps analysts quickly prioritize large volumes of recordings by automatically detecting **threat signals, suspects, locations, and risk levels**.
+The system functions as an autonomous triage agent that processes, analyzes, and prioritizes recordings without human intervention by generating structured intelligence reports and risk classifications.
 
 ---
 
 ## Core Capabilities
 
 ### Speech Recognition (Offline)
-- Processes **noisy field audio**
-- Handles **Kashmiri, Hindi, Urdu**, and mixed speech
-- Uses **Faster-Whisper (Whisper large-v3)** for high-accuracy transcription
-- Automatically detects spoken language
+- Processes noisy field audio
+- Handles Hindi and Urdu robustly using multilingual modeling
+- Handles Kashmiri using multilingual approximation (low-resource language support)
+- Uses Faster-Whisper (Whisper large-v3, int8 CPU mode) for robust multilingual transcription
+- Detects primary spoken language within each recording
+- Generates timestamped transcript segments
+
+Note: Kashmiri is a low-resource language. Performance depends on multilingual generalization rather than language-specific fine-tuning.
+
+---
 
 ### Automatic Translation
-- Converts transcripts into **clear English**
-- Uses an offline **MarianMT multilingual model**
+- Converts transcripts into clear English
+- Uses Whisper translation mode and an additional MarianMT multilingual-to-English model for normalization
+
+---
 
 ### Context-Aware Intelligence Extraction
-The system identifies:
+
+The system performs rule-based NLP extraction of structured intelligence:
 
 | Category | Extracted Information |
 |---------|-----------------------|
-| 👤 People | Names mentioned in conversation |
-| 📍 Locations | Cities, regions, landmarks |
-| 🕒 Time References | Dates, times, schedules |
-| ⚠ Threat Keywords | Words like *attack, blast, weapon* |
-| 🧍 Suspects | People linked with threat language |
+| People | Names mentioned in conversation |
+| Locations | Cities, regions, landmarks |
+| Time References | Dates, times, schedules |
+| Threat Keywords | Words such as attack, blast, weapon |
+| Flagged Individuals | Names that co-occur with threat-related language |
+
+Threat detection is based on customizable keyword matching rather than semantic embedding or contextual sentiment modeling.
+
+---
 
 ### Risk Assessment Engine
-Each audio file is classified as:
+
+Risk classification is determined using rule-based scoring combining threat keyword presence and sensitive location matching.
 
 | Risk Level | Criteria |
 |-----------|----------|
-| **HIGH** | Threat keywords + sensitive location |
-| **MEDIUM** | Threat keywords only |
-| **LOW** | No threat indicators |
+| HIGH | Threat keywords present + sensitive location match |
+| MEDIUM | Threat keywords present |
+| LOW | No threat indicators |
+
+The scoring system is deterministic and threshold-based. It does not use machine learning classification.
 
 ---
 
@@ -49,15 +65,15 @@ Preprocessing (Noise handling + WAV conversion)
    ↓
 Speech-to-Text (Faster-Whisper)
    ↓
-Language Detection
+Primary Language Detection
    ↓
 Translation to English
    ↓
-NLP Analysis (NER + Keyword Detection)
+NLP Analysis (NER + Keyword Matching)
    ↓
-Suspect Detection Logic
+Individual Flagging Logic
    ↓
-Risk Scoring Engine
+Rule-Based Risk Scoring
    ↓
 Structured Intelligence Report
 ```
@@ -71,29 +87,27 @@ KASHMIR_AUDIO_AGENT/
 │
 ├── app.py                        # Streamlit UI entry point
 ├── requirements.txt              # Project dependencies
+├── README.md
 │
 ├── audio_samples/                # Example/test audio files
 │
 ├── data/
-│   ├── threat_keywords.txt
-│   └── sensitive_locations.txt
+│   ├── threat_keywords.txt       # Static threat keyword list
+│   └── sensitive_locations.txt   # Sensitive region list
 │
-├── hf_cache/                     # HuggingFace offline model cache
+├── hf_cache/                     # HuggingFace model cache (created after first run)
 │
 ├── src/
-│   ├── __pycache__/
 │   ├── preprocess.py             # Audio conversion & cleanup
-│   ├── transcribe.py             # Speech recognition (Whisper)
-│   ├── translate.py              # Translation to English
-│   ├── keywords.py               # Threat keyword detection
-│   ├── ner.py                    # Named Entity Recognition
-│   ├── risk_agent.py             # Risk scoring + suspect logic
+│   ├── transcribe.py             # Whisper transcription engine
+│   ├── translate.py              # MarianMT translation module
+│   ├── keywords.py               # Keyword-based threat detection
+│   ├── ner.py                    # Named Entity Recognition (spaCy)
+│   ├── risk_agent.py             # Rule-based risk scoring & flagging logic
 │   └── report.py                 # Transcript highlighting
 │
 ├── temp/                         # Temporary audio processing files
-├── venv/                         # Virtual environment (optional)
-├── temp.wav                      # Temporary converted audio
-└── README.md
+└── venv/                         # Virtual environment (recommended)
 ```
 
 ---
@@ -101,128 +115,181 @@ KASHMIR_AUDIO_AGENT/
 ## How It Works (Step-by-Step)
 
 ### 1. Audio Preprocessing
-Audio files are converted into:
-- Mono channel  
-- 16kHz sample rate  
-Ensures optimal speech recognition accuracy.
+Audio files are converted to:
+- Mono channel
+- 16kHz sample rate
+
+This standardization improves transcription consistency.
 
 ### 2. Speech Recognition
-Uses **Faster-Whisper (large-v3)** for:
-- Offline transcription  
-- Background noise handling  
-- Voice Activity Detection  
-Outputs transcript + timestamps.
+Faster-Whisper (large-v3, int8 CPU mode) performs:
+- Multilingual transcription
+- Primary language detection
+- Voice Activity Detection (VAD)
+- Timestamped segment generation
 
 ### 3. Translation
-Non-English speech is translated into English using MarianMT.
+Transcripts are translated into English using:
+- Whisper translation mode
+- MarianMT multilingual-to-English model for normalization
 
 ### 4. Threat Keyword Detection
-Transcript is scanned for threat-related terms from a custom list.
+Transcript text is scanned against a static, customizable keyword list.  
+Detection is literal string matching.
 
 ### 5. Named Entity Recognition (NER)
-Detects:
-- People  
-- Locations  
-- Dates & Times  
-Powered by spaCy multilingual model.
+Using spaCy multilingual model:
+- PER → People
+- LOC/GPE → Locations
+- DATE/TIME → Time references
 
-### 6. Suspect Identification
-A person becomes a suspect if their name appears in a transcript containing threat keywords.  
-Suspicion score increases with number of threat indicators.
+### 6. Individual Flagging
+Individuals are flagged for contextual review when their names co-occur with threat-related language.
+
+Co-occurrence does not imply guilt. Flagging is purely heuristic and designed for analyst prioritization.
 
 ### 7. Risk Scoring
-Combines:
-- Threat presence  
-- Sensitive location detection  
-Produces LOW / MEDIUM / HIGH risk classification.
+A deterministic scoring mechanism combines:
+- Presence of threat keywords
+- Matching against predefined sensitive locations
+
+Final output is LOW, MEDIUM, or HIGH risk.
 
 ---
 
 ## User Interface
 
-Built with **Streamlit** for easy offline use:
+Built with Streamlit for offline desktop usage:
 
-- Upload multiple audio files  
-- View translated transcript  
-- See highlighted threat terms  
-- Get structured intelligence report  
-- Batch risk summary dashboard  
+- Upload multiple audio files
+- View English transcript
+- Highlight threat keywords
+- Display structured JSON intelligence report
+- Batch risk summary across files
+
+The system operates autonomously once files are uploaded.
 
 ---
 
-## 📊 Structured Output Example
+## Structured Output Example
 
 ```
-{
-  "File": "audio_01.wav",
-  "Detected Language": "ur",
-  "Threat Words": ["attack", "weapon"],
-  "People Mentioned": ["Rashid", "Imran"],
-  "Potential Suspects": [
-    {"name": "Rashid", "suspicion_score": 2}
-  ],
-  "Locations": ["Srinagar"],
-  "Time References": ["tomorrow night"],
-  "Audio Segments": [
-    {"start": 0.5, "end": 4.2, "text": "..."}
-  ],
-  "Risk Level": "HIGH"
+report = {
+    "File": uploaded.name,
+    "Detected Language": lang,
+    "Threat Words": threat_words,
+    "People Mentioned": persons,
+    "Flagged Individuals": suspects,
+    "Locations": locations,
+    "Time References": times,
+    "Audio Segments": segments,
+    "Risk Level": risk
 }
+
 ```
 
 ---
 
 ## Installation
 
-```bash
-git clone <repo-link>
-cd kashmir-audio-agent
-pip install -r requirements.txt
-python -m spacy download xx_ent_wiki_sm
-```
+### 1. Clone the Repository
+
+   ```bash
+   git clone <repo-link>
+   cd kashmir-audio-agent
+   ```
+
+### 2. Create a Virtual Environment (Recommended)
+
+a. On Windows:
+
+   ```bash
+   python -m venv venv
+   venv\Scripts\activate
+   ```
+
+b. On macOS / Linux:
+
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
+
+### 3. Upgrade pip
+
+   ```bash
+   python -m pip install --upgrade pip
+   ```
+
+### 4. Install Dependencies
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+### 5. Install spaCy Model
+
+   ```bash
+   python -m spacy download xx_ent_wiki_sm
+   ```
+
+### 6. First-Run Model Download
+
+Internet is required only for the initial download of:
+
+- Faster-Whisper large-v3
+- MarianMT multilingual-to-English model
+
+These models are cached locally inside `hf_cache/`.  
+All subsequent executions operate fully offline.
 
 ---
 
 ## Run the Application
 
-```bash
-streamlit run app.py
-```
+Ensure your virtual environment is activated, then run:
+
+   ```bash
+   streamlit run app.py
+   ```
+
+Streamlit will provide a local URL (typically `http://localhost:8501`) in the terminal.
 
 ---
 
 ## Offline Design
 
-✔ No internet required after model download  
-✔ All models cached locally  
-✔ Optimized for CPU usage  
+- Requires internet only for initial model download
+- Fully offline after caching
+- CPU-optimized (int8 mode)
+- Designed for low-connectivity environments
+
+---
+
+## Limitations
+
+- Kashmiri is a low-resource language; transcription quality may vary.
+- Mixed-language code-switching is not explicitly segmented.
+- Threat detection is keyword-based and not semantic.
+- Risk scoring is rule-based and not ML-classified.
+- No speaker identification or verification.
+- Performance may degrade under heavy background noise.
 
 ---
 
 ## Use Cases
 
-- Security monitoring  
-- Intelligence triage  
-- Field audio analysis  
-- Multilingual threat detection  
-- Rapid risk prioritization  
+- Audio triage for multilingual environments
+- Preliminary intelligence prioritization
+- Structured analysis of mixed-language recordings
+- Offline threat keyword monitoring
 
 ---
 
 ## Disclaimer
 
-This tool provides **automated risk estimation** to assist human analysts.  
-It does **not** make legal determinations or replace professional investigation.
-
----
-
-## Future Enhancements
-
-- Speaker identification  
-- Accent adaptation  
-- Emotion detection  
-- Real-time stream processing  
-- Custom regional language tuning  
+This tool provides automated prioritization and risk estimation for analyst review.  
+It does not determine guilt, intent, or legal responsibility.
 
 ---
 
